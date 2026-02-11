@@ -28,6 +28,9 @@ jobs:
       - name: Fetch app data
         run: |
           python fetch.py "${{ github.event.inputs.app_id }}"
+        # GitHub secret is available here if needed inside fetch.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload result
         uses: actions/upload-artifact@v4
