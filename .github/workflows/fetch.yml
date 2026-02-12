@@ -11,29 +11,14 @@ on:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          pip install requests
-
-      - name: Fetch app data
-        run: |
-          python fetch.py "${{ github.event.inputs.app_id }}"
-        # GitHub secret is available here if needed inside fetch.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload result
-        uses: actions/upload-artifact@v4
+      - run: pip install requests
+      - run: python fetch.py "${{ github.event.inputs.app_id }}"
+      - uses: actions/upload-artifact@v4
         with:
           name: appgallery-result
           path: result.json
