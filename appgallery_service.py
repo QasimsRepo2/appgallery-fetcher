@@ -190,3 +190,30 @@ def cli():
 
 if __name__ == "__main__":
     cli()
+
+# === Wrapper function for GitHub Actions ===
+def fetch_single_app(app_id: str):
+    """
+    Fetch a single app from AppGallery and return clean JSON suitable for fetch.py
+    """
+    try:
+        app_info = get_app_info(app_id)
+        
+        size_bytes = app_info.get("size") or app_info.get("fullSize") or 0
+        size_mb = round(size_bytes / (1024 * 1024), 2)
+        
+        return {
+            "status": "success",
+            "data": {
+                "app_id": app_info.get("appid") or app_id,
+                "name": app_info.get("name") or "N/A",
+                "developer": app_info.get("developer") or "N/A",
+                "version": app_info.get("versionName") or app_info.get("version") or "N/A",
+                "size_mb": size_mb,
+                "package": app_info.get("package") or app_info.get("package_name") or "N/A",
+                "portal_url": app_info.get("portalUrl") or "N/A",
+                "description": app_info.get("editorDescribe") or app_info.get("description") or "N/A"
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
