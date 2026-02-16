@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AppGallery Fetcher</title>
+  <style>
+    body { font-family: Arial; padding: 40px; max-width: 700px; margin: auto; }
+    input { padding: 8px; width: 250px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .card { margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+<h2>Huawei AppGallery App Info</h2>
+
+<input id="appId" placeholder="C103836643" />
+<button onclick="fetchApp()">Fetch</button>
+
+<div id="result"></div>
+
+<script>
+async function fetchApp() {
+  const appId = document.getElementById("appId").value.trim();
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "Loading...";
+
+  try {
+    // 1️⃣ Get interface code
+    const interfaceResp = await fetch(
+      "https://web-drru.hispace.dbankcloud.ru/webedge/getInterfaceCode",
+      { method: "POST" }
+    );
+    const interfaceCode = await interfaceResp.json();
+    const timestamp = Date.now();
+    const headerValue = interfaceCode + "_" + timestamp;
+
+    // 2️⃣ Fetch app info
+    const response = await fetch(
+      `https://web-drru.hispace.dbankcloud.ru/uowap/index?method=internal.getTabDetail&uri=app%7C${appId}`,
+      {
+        headers: { "Interface-Code": headerValue }
+      }
+    );
+
+    const data = await response.json();
+    const layout = data.layoutData || [];
+
+    let appInfo = null;
+    let developer = "N/A";
+
+    layout.forEach(section => {
+      if (section.layoutId === 49) {
+        section.dataList.forEach(item => {
+          if (item.appid === appId) {
+            appInfo = item;
+          }
+        });
+      }
+
+      if (section.layoutId === 59) {
+        section.dataList.forEach(item => {
+          if (item.list) {
+            item.list.forEach(dev => {
+              if (dev.name === "Developer") {
+                developer = dev.text;
+              }
+            });
+          }
+        });
+      }
+    });
+
+    if (!appInfo) {
+      throw new Error("App not found");
+    }
+
+    const sizeMB = ((appInfo.size || appInfo.fullSize || 0) / (1024*1024)).toFixed(2);
+
+    resultDiv.innerHTML = `
+      <div class="card">
+        <h3>${appInfo.name}</h3>
+        <p><strong>Developer:</strong> ${developer}</p>
+        <p><strong>Version:</strong> ${appInfo.versionName || appInfo.version}</p>
+        <p><strong>Size:</strong> ${sizeMB} MB</p>
+        <p><strong>Package:</strong> ${appInfo.package}</p>
+        <p><strong>Description:</strong> ${appInfo.editorDescribe || appInfo.description || "N/A"}</p>
+      </div>
+    `;
+
+  } catch (err) {
+    resultDiv.innerHTML = `<p class="error">Failed to fetch app info.</p>`;
+  }
+}
+</script>
+
+</body>
+</html>
